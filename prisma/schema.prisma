@@ -32,3 +32,124 @@ model CommunityThread {
   topic     String
   communityThreadSlug String
 }
+
+// E-commerce and encomendas models
+
+model User {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  email     String   @unique
+  name      String?
+  phone     String?
+
+  stores    Store[]
+  orders    Order[]
+}
+
+model Store {
+  id          String    @id @default(uuid())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+  name        String
+  description String?
+  ownerId     String
+  owner       User      @relation(fields: [ownerId], references: [id])
+
+  products    Product[]
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10,2)
+  currency    String   @default("MZN")
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id])
+
+  orderItems  OrderItem[]
+}
+
+model Order {
+  id            String      @id @default(uuid())
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @default(now()) @updatedAt
+  customerId    String?
+  customer      User?       @relation(fields: [customerId], references: [id])
+  totalAmount   Decimal     @db.Decimal(10,2)
+  currency      String      @default("MZN")
+  status        OrderStatus @default(PENDING)
+  trackingCode  String      @unique
+
+  items         OrderItem[]
+  payment       Payment?
+  shipment      Shipment?
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  quantity  Int
+  unitPrice Decimal  @db.Decimal(10,2)
+  productId String
+  orderId   String
+
+  product   Product  @relation(fields: [productId], references: [id])
+  order     Order    @relation(fields: [orderId], references: [id])
+}
+
+model Payment {
+  id           String        @id @default(uuid())
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @default(now()) @updatedAt
+  orderId      String        @unique
+  provider     PaymentMethod
+  providerRef  String?
+  amount       Decimal       @db.Decimal(10,2)
+  currency     String        @default("MZN")
+  status       PaymentStatus @default(PENDING)
+
+  order        Order         @relation(fields: [orderId], references: [id])
+}
+
+model Shipment {
+  id           String         @id @default(uuid())
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @default(now()) @updatedAt
+  orderId      String         @unique
+  carrier      String?
+  status       ShipmentStatus @default(CREATED)
+  currentCity  String?
+  notes        String?
+
+  order        Order          @relation(fields: [orderId], references: [id])
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  FULFILLED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  MPESA
+  EMOLA
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  SETTLED
+  FAILED
+}
+
+enum ShipmentStatus {
+  CREATED
+  IN_TRANSIT
+  DELIVERED
+  RETURNED
+}
