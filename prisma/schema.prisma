@@ -32,3 +32,172 @@ model CommunityThread {
   topic     String
   communityThreadSlug String
 }
+
+/// E-commerce models for Online Parcel/Order Control
+
+enum PaymentProvider {
+  MPESA
+  EMOLA
+  MANUAL
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model Store {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
+  name      String
+  slug      String    @unique
+  ownerEmail String
+  phone     String?
+  logoUrl   String?
+
+  products  Product[]
+  orders    Order[]
+}
+
+model Product {
+  id         String   @id @default(uuid())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+  store      Store    @relation(fields: [storeId], references: [id])
+  storeId    String
+
+  name       String
+  sku        String   @unique
+  description String?
+  priceCents Int
+  currency   String   // e.g., "MZN"
+  active     Boolean  @default(true)
+
+  orderItems OrderItem[]
+}
+
+model Customer {
+  id         String   @id @default(uuid())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+  name       String?
+  email      String?  @unique
+  phone      String?
+
+  addresses  Address[]
+  orders     Order[]
+}
+
+model Address {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+  customer    Customer? @relation(fields: [customerId], references: [id])
+  customerId  String?
+
+  line1       String
+  line2       String?
+  city        String
+  state       String?
+  country     String
+  postalCode  String?
+
+  ordersShipping AddressOnOrderShipping[]
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @default(now()) @updatedAt
+  store       Store       @relation(fields: [storeId], references: [id])
+  storeId     String
+  customer    Customer?   @relation(fields: [customerId], references: [id])
+  customerId  String?
+
+  status      OrderStatus @default(PENDING)
+  currency    String
+  subtotalCents Int
+  shippingCents Int       @default(0)
+  totalCents  Int
+
+  items       OrderItem[]
+  payments    Payment[]
+  shipment    Shipment?
+
+  shippingAddress AddressOnOrderShipping?
+}
+
+model OrderItem {
+  id           String   @id @default(uuid())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+  order        Order    @relation(fields: [orderId], references: [id])
+  orderId      String
+  product      Product  @relation(fields: [productId], references: [id])
+  productId    String
+  quantity     Int
+  unitPriceCents Int
+  totalCents   Int
+}
+
+model Payment {
+  id            String         @id @default(uuid())
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @default(now()) @updatedAt
+  order         Order          @relation(fields: [orderId], references: [id])
+  orderId       String
+  provider      PaymentProvider
+  status        PaymentStatus  @default(PENDING)
+  amountCents   Int
+  currency      String
+  phone         String?
+  providerRef   String?
+  rawResponse   Json?
+}
+
+model Shipment {
+  id            String     @id @default(uuid())
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @default(now()) @updatedAt
+  order         Order      @relation(fields: [orderId], references: [id])
+  orderId       String     @unique
+  carrier       String?
+  trackingCode  String?    @unique
+  status        String     @default("PENDING")
+  events        TrackingEvent[]
+}
+
+model TrackingEvent {
+  id            String    @id @default(uuid())
+  createdAt     DateTime  @default(now())
+  shipment      Shipment  @relation(fields: [shipmentId], references: [id])
+  shipmentId    String
+  status        String
+  description   String?
+  location      String?
+  occurredAt    DateTime  @default(now())
+}
+
+/// Helper relation to store a snapshot of shipping address on Order while reusing Address shape
+model AddressOnOrderShipping {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+  order       Order    @relation(fields: [orderId], references: [id])
+  orderId     String   @unique
+  address     Address  @relation(fields: [addressId], references: [id])
+  addressId   String
+}
