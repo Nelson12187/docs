@@ -1,23 +1,40 @@
-# 📚 Railway Documentation
+# 🛍️ App de Controle de Encomendas Online
 
-Visit [docs.railway.com](https://docs.railway.com)
+Aplicação full-stack em Next.js com Prisma e Postgres para cadastro de lojas, produtos, pedidos, pagamentos (M‑Pesa e e‑Mola) e rastreio de encomendas.
 
-![og](https://railway.com/og.png)
+## Recursos
+- Cadastro de lojas e produtos
+- Criação de pedidos e carrinho de compras
+- Checkout com M‑Pesa e e‑Mola (mock por padrão, integrações reais via env)
+- Rastreio por código com eventos
+- Endpoints REST (Next.js API Routes)
 
-## 💡 About
-
-This is the place where all the documentation about Railway is hosted. Contributions are welcome! Change the markdown, make a pull request, and we'll merge it! Deploys will happen automagically cause the docs are hosted on Railway
-
-## 🧑‍🔬 Contributing
-
-This is a [NextJS](https://nextjs.org) project.
-
-Develop with
-
+## Executar localmente
+1. Copie `.env.example` para `.env` e configure `DATABASE_URL` (Postgres)
+2. Instale dependências e gere o client do Prisma:
 ```bash
-npm run dev
-# or
+yarn
+yarn generate
+```
+3. Rode as migrações:
+```bash
+yarn migrate:dev
+```
+4. Suba o servidor de dev:
+```bash
 yarn dev
 ```
 
-Open [localhost:3001](http://localhost:3001) to see the result
+Abra http://localhost:3001
+
+## Rotas principais
+- Admin lojas: `/admin/stores`
+- Loja por slug: `/loja/[slug]`
+- Rastreio: `/rastreio/[codigo]`
+
+## API principal
+- `POST /api/orders` cria pedido
+- `POST /api/checkout` inicia pagamento M‑Pesa/e‑Mola
+- `GET /api/tracking/[code]` consulta rastreio
+
+Integrações M‑Pesa e e‑Mola retornam sucesso simulado se variáveis de ambiente não estiverem configuradas.
